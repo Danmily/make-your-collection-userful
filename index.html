@@ -1,0 +1,927 @@
+<title>重遇 · 会替你记得的收件箱</title>
+
+<style>
+/* ── tokens ─────────────────────────────────────────────── */
+:root{
+  --ground:#E4E9E8; --surface:#F2F5F4; --sunk:#D6DEDD;
+  --ink:#14262E; --ink-soft:#5E7075; --ink-faint:#8A9B9E;
+  --line:#C6D0CE; --line-soft:#D5DEDC;
+  --brass:#8F6215; --brass-bg:#EDE2CC;
+  --verdigris:#1D5F55; --verdigris-bg:#D7E5E1;
+  --rust:#8E3B20; --rust-bg:#EFDCD5;
+  --deep-1:#E4E9E8; --deep-2:#CFD9D8; --deep-3:#BCC8C8;
+
+  --font-display:"Songti SC","STSong","Source Han Serif SC","Noto Serif CJK SC","Noto Serif SC",Georgia,serif;
+  --font-body:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --font-data:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:18px; --s5:28px; --s6:44px; --s7:68px;
+}
+/* dark tokens — the toggle below overrides these in both directions */
+@media (prefers-color-scheme:dark){
+  :root{
+    --ground:#0D191F; --surface:#152730; --sunk:#101E25;
+    --ink:#DDE7E6; --ink-soft:#8DA0A2; --ink-faint:#61767A;
+    --line:#223A43; --line-soft:#1B2F37;
+    --brass:#D9A85B; --brass-bg:#332813;
+    --verdigris:#5CBBA8; --verdigris-bg:#12332F;
+    --rust:#DC8464; --rust-bg:#361D14;
+    --deep-1:#0D191F; --deep-2:#0A141A; --deep-3:#071016;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D191F; --surface:#152730; --sunk:#101E25;
+  --ink:#DDE7E6; --ink-soft:#8DA0A2; --ink-faint:#61767A;
+  --line:#223A43; --line-soft:#1B2F37;
+  --brass:#D9A85B; --brass-bg:#332813;
+  --verdigris:#5CBBA8; --verdigris-bg:#12332F;
+  --rust:#DC8464; --rust-bg:#361D14;
+  --deep-1:#0D191F; --deep-2:#0A141A; --deep-3:#071016;
+}
+:root[data-theme="light"]{
+  --ground:#E4E9E8; --surface:#F2F5F4; --sunk:#D6DEDD;
+  --ink:#14262E; --ink-soft:#5E7075; --ink-faint:#8A9B9E;
+  --line:#C6D0CE; --line-soft:#D5DEDC;
+  --brass:#8F6215; --brass-bg:#EDE2CC;
+  --verdigris:#1D5F55; --verdigris-bg:#D7E5E1;
+  --rust:#8E3B20; --rust-bg:#EFDCD5;
+  --deep-1:#E4E9E8; --deep-2:#CFD9D8; --deep-3:#BCC8C8;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:var(--font-body); color:var(--ink);
+  background:linear-gradient(180deg,var(--deep-1) 0%,var(--deep-2) 55%,var(--deep-3) 100%);
+  background-attachment:fixed; min-height:100vh;
+  -webkit-font-smoothing:antialiased; line-height:1.6;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 var(--s4) var(--s7)}
+
+/* ── masthead ───────────────────────────────────────────── */
+header.mast{
+  display:flex; align-items:flex-end; justify-content:space-between;
+  gap:var(--s4); flex-wrap:wrap;
+  padding:var(--s6) 0 var(--s4); border-bottom:1px solid var(--line);
+}
+.mark{display:flex; align-items:baseline; gap:var(--s3)}
+.mark h1{
+  font-family:var(--font-display); font-size:38px; font-weight:600;
+  margin:0; letter-spacing:.22em; text-indent:.22em; line-height:1;
+}
+.mark .en{
+  font-family:var(--font-data); font-size:11px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--ink-faint); padding-bottom:3px;
+}
+.tag{
+  font-family:var(--font-display); font-size:14px; color:var(--ink-soft);
+  letter-spacing:.05em; margin:var(--s2) 0 0;
+}
+.mast-right{display:flex; align-items:center; gap:var(--s3)}
+.count{font-family:var(--font-data); font-size:12px; color:var(--ink-faint); font-variant-numeric:tabular-nums}
+
+/* ── nav ────────────────────────────────────────────────── */
+nav.tabs{display:flex; gap:0; border-bottom:1px solid var(--line); margin-bottom:var(--s6); flex-wrap:wrap}
+nav.tabs button{
+  appearance:none; background:none; border:0; border-bottom:2px solid transparent;
+  font-family:var(--font-display); font-size:17px; letter-spacing:.14em; text-indent:.14em;
+  color:var(--ink-faint); padding:var(--s3) var(--s4); cursor:pointer; margin-bottom:-1px;
+  transition:color .18s;
+}
+nav.tabs button:hover{color:var(--ink-soft)}
+nav.tabs button[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--brass)}
+nav.tabs button .n{font-family:var(--font-data); font-size:11px; letter-spacing:0; text-indent:0; color:var(--ink-faint); margin-left:6px; font-variant-numeric:tabular-nums}
+:focus-visible{outline:2px solid var(--brass); outline-offset:3px; border-radius:2px}
+
+/* ── shared bits ────────────────────────────────────────── */
+.eyebrow{
+  font-family:var(--font-data); font-size:10.5px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--ink-faint); margin:0 0 var(--s2);
+}
+.sect-h{font-family:var(--font-display); font-size:22px; font-weight:600; margin:0 0 var(--s2); letter-spacing:.06em; text-wrap:balance}
+.lede{color:var(--ink-soft); font-size:14px; margin:0 0 var(--s5); max-width:62ch}
+.btn{
+  appearance:none; font-family:var(--font-body); font-size:13px; cursor:pointer;
+  background:var(--surface); color:var(--ink); border:1px solid var(--line);
+  padding:7px 14px; border-radius:2px; transition:border-color .15s,background .15s;
+}
+.btn:hover{border-color:var(--ink-faint)}
+.btn.primary{background:var(--ink); color:var(--ground); border-color:var(--ink)}
+.btn.primary:hover{opacity:.88}
+.btn.ghost{background:none}
+.chip{
+  display:inline-flex; align-items:center; gap:5px; font-size:11.5px;
+  padding:2px 8px; border-radius:2px; white-space:nowrap;
+  background:var(--surface); color:var(--ink-soft); border:1px solid var(--line-soft);
+}
+.chip.brass{background:var(--brass-bg); color:var(--brass); border-color:transparent; font-weight:600}
+.chip.verd{background:var(--verdigris-bg); color:var(--verdigris); border-color:transparent}
+.chip.rust{background:var(--rust-bg); color:var(--rust); border-color:transparent}
+.num{font-family:var(--font-data); font-variant-numeric:tabular-nums}
+
+/* ── depth rail (the 重遇 view) ─────────────────────────── */
+.depth{display:grid; grid-template-columns:62px 1fr; gap:0}
+.rail{position:relative; border-right:1px solid var(--line-soft)}
+.rail .tick{
+  position:absolute; right:-1px; width:9px; border-top:1px solid var(--line);
+  font-family:var(--font-data); font-size:9.5px; color:var(--ink-faint);
+}
+.rail .tick span{position:absolute; right:14px; top:-7px; white-space:nowrap; letter-spacing:.08em}
+.rail .waterline{position:absolute; left:0; right:-1px; border-top:1.5px solid var(--brass)}
+.rail .waterline span{
+  position:absolute; right:14px; top:-8px; font-family:var(--font-display);
+  font-size:12px; color:var(--brass); letter-spacing:.16em; white-space:nowrap;
+}
+.column{padding-left:var(--s5); min-width:0}
+
+/* net / budget selector */
+.nets{display:flex; gap:var(--s2); flex-wrap:wrap; margin-bottom:var(--s5)}
+.net{
+  appearance:none; cursor:pointer; text-align:left; border-radius:2px;
+  background:var(--surface); border:1px solid var(--line); padding:9px 14px;
+  font-family:var(--font-body); color:var(--ink-soft); transition:all .16s;
+}
+.net b{display:block; font-family:var(--font-display); font-size:15px; color:var(--ink); font-weight:600; letter-spacing:.06em}
+.net i{font-style:normal; font-family:var(--font-data); font-size:10.5px; color:var(--ink-faint); letter-spacing:.06em}
+.net[aria-pressed="true"]{border-color:var(--brass); background:var(--brass-bg)}
+.net[aria-pressed="true"] b,.net[aria-pressed="true"] i{color:var(--brass)}
+
+/* ── item cards ─────────────────────────────────────────── */
+.risen{display:flex; flex-direction:column; gap:var(--s4)}
+.card{
+  position:relative; background:var(--surface); border:1px solid var(--line);
+  padding:var(--s4) var(--s4) var(--s3) calc(var(--s4) + 10px); border-radius:2px;
+  transition:transform .2s ease, border-color .2s;
+}
+.card:hover{transform:translateY(-2px); border-color:var(--ink-faint)}
+/* content-type gets a shape, not just an icon */
+.card::before{content:""; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--ink-faint)}
+.card[data-type="video"]::before{
+  background:repeating-linear-gradient(180deg,var(--brass) 0 5px,transparent 5px 10px);
+}
+.card[data-type="article"]::before{background:var(--verdigris)}
+.card[data-type="post"]::before{
+  background:repeating-linear-gradient(180deg,var(--verdigris) 0 2px,transparent 2px 7px);
+}
+.card[data-type="product"]::before{background:var(--rust)}
+.card[data-type="tool"]::before{
+  background:repeating-linear-gradient(180deg,var(--ink-soft) 0 9px,transparent 9px 12px);
+}
+.card h3{
+  font-family:var(--font-display); font-size:19px; font-weight:600; margin:0 0 6px;
+  line-height:1.45; letter-spacing:.03em; text-wrap:balance;
+}
+.card h3 a{color:inherit; text-decoration:none; background-image:linear-gradient(var(--brass),var(--brass));
+  background-size:0 1px; background-repeat:no-repeat; background-position:0 100%; transition:background-size .25s}
+.card h3 a:hover{background-size:100% 1px}
+.card p.ex{margin:0 0 var(--s3); font-size:13.5px; color:var(--ink-soft); line-height:1.7; max-width:64ch}
+.meta{display:flex; gap:var(--s2); flex-wrap:wrap; align-items:center; margin-bottom:var(--s3)}
+.why{
+  display:flex; gap:var(--s2); align-items:flex-start;
+  border-top:1px dashed var(--line); padding-top:var(--s3); margin-top:var(--s2);
+}
+.why .lbl{
+  font-family:var(--font-data); font-size:9.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--brass); white-space:nowrap; padding-top:3px;
+}
+.why .txt{font-family:var(--font-display); font-size:14px; color:var(--ink); letter-spacing:.03em}
+.acts{display:flex; gap:var(--s2); margin-top:var(--s3); flex-wrap:wrap}
+.acts .btn{font-size:12px; padding:5px 11px}
+
+/* below the waterline */
+.sunkhead{
+  display:flex; align-items:center; gap:var(--s3); margin:var(--s6) 0 var(--s4);
+  font-family:var(--font-display); font-size:13px; color:var(--ink-faint); letter-spacing:.2em;
+}
+.sunkhead::after{content:""; flex:1; border-top:1px solid var(--line-soft)}
+.sediment{display:flex; flex-direction:column}
+.srow{
+  display:grid; grid-template-columns:1fr auto auto; gap:var(--s3); align-items:baseline;
+  padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:13.5px;
+}
+.srow .t{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.srow .t a{color:inherit; text-decoration:none}
+.srow .t a:hover{color:var(--brass)}
+.srow .d,.srow .c{font-family:var(--font-data); font-size:11px; color:var(--ink-faint); font-variant-numeric:tabular-nums}
+
+/* ── clusters ───────────────────────────────────────────── */
+.clusters{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:var(--s4)}
+.cluster{background:var(--surface); border:1px solid var(--line); border-radius:2px; padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3)}
+.cluster .hd{display:flex; align-items:baseline; justify-content:space-between; gap:var(--s3)}
+.cluster h3{font-family:var(--font-display); font-size:20px; margin:0; font-weight:600; letter-spacing:.06em}
+.cluster .synth{font-size:13px; color:var(--ink-soft); margin:0; line-height:1.75}
+.cluster ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; border-top:1px solid var(--line-soft)}
+.cluster li{padding:7px 0; border-bottom:1px solid var(--line-soft); font-size:13px; display:flex; gap:var(--s2); align-items:baseline}
+.cluster li:last-child{border-bottom:0}
+.cluster li a{color:var(--ink); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.cluster li a:hover{color:var(--brass)}
+.cluster li .dot{width:4px; height:4px; border-radius:50%; background:var(--verdigris); flex:none; transform:translateY(-2px)}
+.span{font-family:var(--font-data); font-size:10.5px; color:var(--ink-faint); letter-spacing:.06em; white-space:nowrap; font-variant-numeric:tabular-nums}
+
+/* ── ask ────────────────────────────────────────────────── */
+.askbar{display:flex; gap:var(--s2); margin-bottom:var(--s3); flex-wrap:wrap}
+.askbar input{
+  flex:1; min-width:240px; font-family:var(--font-display); font-size:17px; letter-spacing:.04em;
+  background:var(--surface); border:1px solid var(--line); border-bottom:2px solid var(--brass);
+  color:var(--ink); padding:11px 14px; border-radius:2px;
+}
+.askbar input::placeholder{color:var(--ink-faint); font-size:15px}
+.filters{display:flex; gap:var(--s2); flex-wrap:wrap; margin-bottom:var(--s5)}
+.filters select{
+  font-family:var(--font-body); font-size:12.5px; background:var(--surface); color:var(--ink-soft);
+  border:1px solid var(--line); padding:5px 8px; border-radius:2px;
+}
+.suggest{display:flex; gap:var(--s2); flex-wrap:wrap; margin-bottom:var(--s5)}
+.suggest button{
+  appearance:none; cursor:pointer; font-family:var(--font-display); font-size:13px; letter-spacing:.04em;
+  background:none; border:1px dashed var(--line); color:var(--ink-soft); padding:5px 11px; border-radius:2px;
+}
+.suggest button:hover{border-style:solid; border-color:var(--brass); color:var(--brass)}
+mark{background:var(--brass-bg); color:var(--brass); padding:0 2px; border-radius:1px}
+
+/* ── inbox ──────────────────────────────────────────────── */
+.tools{display:flex; gap:var(--s3); flex-wrap:wrap; align-items:center; margin-bottom:var(--s5);
+  padding:var(--s4); background:var(--surface); border:1px solid var(--line); border-radius:2px}
+.tools .grow{flex:1; min-width:200px}
+.tools input[type="text"],.tools input[type="url"]{
+  width:100%; font-family:var(--font-body); font-size:13px; background:var(--ground);
+  border:1px solid var(--line); color:var(--ink); padding:8px 10px; border-radius:2px;
+}
+.tools label{display:block; font-family:var(--font-data); font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-faint); margin-bottom:5px}
+.note{font-size:12px; color:var(--ink-faint); line-height:1.7; margin:var(--s2) 0 0; flex-basis:100%}
+.alert{border-left:3px solid var(--rust); background:var(--rust-bg); padding:var(--s3) var(--s4);
+  margin-bottom:var(--s4); border-radius:0 2px 2px 0; font-size:13px; color:var(--ink)}
+.alert b{font-family:var(--font-display); color:var(--rust)}
+.alert.ok{border-color:var(--verdigris); background:var(--verdigris-bg)}
+.alert.ok b{color:var(--verdigris)}
+table.inbox{width:100%; border-collapse:collapse; font-size:13.5px}
+table.inbox th{
+  text-align:left; font-family:var(--font-data); font-size:10px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink-faint); font-weight:400;
+  padding:0 var(--s3) var(--s2) 0; border-bottom:1px solid var(--line);
+}
+table.inbox td{padding:10px var(--s3) 10px 0; border-bottom:1px solid var(--line-soft); vertical-align:top}
+table.inbox td.t a{color:var(--ink); text-decoration:none}
+table.inbox td.t a:hover{color:var(--brass)}
+.scroller{overflow-x:auto}
+.empty{color:var(--ink-faint); font-size:13.5px; padding:var(--s5) 0; text-align:center; font-family:var(--font-display)}
+
+.panel[hidden]{display:none}
+footer{margin-top:var(--s7); padding-top:var(--s4); border-top:1px solid var(--line);
+  font-size:12px; color:var(--ink-faint); line-height:1.8}
+
+@media (prefers-reduced-motion:no-preference){
+  /* 无 fill-mode：动画被节流/不执行时，卡片停在正常态而不是隐身 */
+  .risen.anim>.card{animation:rise .45s cubic-bezier(.2,.7,.3,1)}
+  @keyframes rise{from{opacity:0; transform:translateY(14px)}to{opacity:1; transform:none}}
+}
+@media (max-width:640px){
+  .depth{grid-template-columns:1fr}
+  .rail{display:none}
+  .column{padding-left:0}
+  .mark h1{font-size:30px}
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div>
+    <div class="mark">
+      <h1>重遇</h1>
+      <span class="en">Resurface</span>
+    </div>
+    <p class="tag">不是更好的收藏夹，是一个会替你记得的收件箱。</p>
+  </div>
+  <div class="mast-right">
+    <span class="count" id="stat"></span>
+    <button class="btn ghost" id="reseed">恢复示例数据</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="resurface" aria-selected="true">重遇</button>
+  <button role="tab" data-tab="clusters" aria-selected="false">专题<span class="n" id="n-clusters"></span></button>
+  <button role="tab" data-tab="ask" aria-selected="false">追问</button>
+  <button role="tab" data-tab="inbox" aria-selected="false">收件箱<span class="n" id="n-inbox"></span></button>
+</nav>
+
+<!-- ── 重遇 ─────────────────────────────────────────────── -->
+<section class="panel" id="panel-resurface">
+  <p class="eyebrow">今天该看什么</p>
+  <h2 class="sect-h">你现在有多少时间？</h2>
+  <p class="lede">收藏吃灰，多半不是忘了，而是每次想起它的时候都没那个时间。先告诉我手上有多少空档，剩下的交给打分。</p>
+
+  <div class="nets" id="nets"></div>
+
+  <div class="depth">
+    <div class="rail" id="rail"></div>
+    <div class="column">
+      <div class="risen" id="risen"></div>
+      <div class="sunkhead">水面以下</div>
+      <div class="sediment" id="sediment"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 专题 ─────────────────────────────────────────────── -->
+<section class="panel" id="panel-clusters" hidden>
+  <p class="eyebrow">你自己没发现的线索</p>
+  <h2 class="sect-h">你其实一直在研究这些</h2>
+  <p class="lede">下面每一组，都是你在不同时间、不同 app 里零散存下的东西。存的时候它们互不相干，聚到一起才看得出你在琢磨什么。</p>
+  <div class="clusters" id="clusters"></div>
+</section>
+
+<!-- ── 追问 ─────────────────────────────────────────────── -->
+<section class="panel" id="panel-ask" hidden>
+  <p class="eyebrow">兜底能力</p>
+  <h2 class="sect-h">用你记得的那点线索去问</h2>
+  <p class="lede">记不住标题没关系。说个大概——什么内容、大概什么时候、在哪看到的，都算线索。</p>
+
+  <div class="askbar">
+    <input type="text" id="q" placeholder="上次那个讲配色的视频…" autocomplete="off">
+  </div>
+  <div class="filters">
+    <select id="f-source"><option value="">全部来源</option></select>
+    <select id="f-intent"><option value="">全部意图</option></select>
+    <select id="f-age"><option value="">不限时间</option><option value="30">最近一个月</option><option value="90">最近三个月</option><option value="365">最近一年</option><option value="9999">一年以前</option></select>
+    <select id="f-cost"><option value="">不限长短</option><option value="10">10 分钟以内</option><option value="30">半小时以内</option><option value="999">半小时以上</option></select>
+  </div>
+  <div class="suggest" id="suggest"></div>
+  <div id="results"></div>
+</section>
+
+<!-- ── 收件箱 ───────────────────────────────────────────── -->
+<section class="panel" id="panel-inbox" hidden>
+  <p class="eyebrow">进出口</p>
+  <h2 class="sect-h">收进来，和该清出去的</h2>
+  <p class="lede">收藏夹应该会瘦，不该只会胖。存了大半年一次没碰、或者内容明显过期的，会在这里主动找你。</p>
+
+  <div class="tools">
+    <div class="grow">
+      <label for="new-url">粘一条链接</label>
+      <input type="url" id="new-url" placeholder="https://…">
+    </div>
+    <div class="grow">
+      <label for="new-title">标题</label>
+      <input type="text" id="new-title" placeholder="它讲的是什么">
+    </div>
+    <div class="grow">
+      <label for="new-note">一句话：你为什么存它</label>
+      <input type="text" id="new-note" placeholder="想照着做一遍 / 备着以后引用 / …">
+    </div>
+    <button class="btn primary" id="add">收进来</button>
+    <div>
+      <label for="file">导入浏览器书签</label>
+      <input type="file" id="file" accept=".html,.htm" style="font-size:12px;color:var(--ink-soft)">
+    </div>
+    <p class="note">浏览器里拿不到目标网页的正文，所以现在的来源、类型、意图、时长是按域名和标题推断的，标题和备注要你自己填。接上后端抓取 + 模型抽取之后，这一步会全自动。导入支持 Chrome / Edge / Safari 导出的书签 HTML，全程在你本机解析，不上传。</p>
+  </div>
+
+  <div id="inbox-alerts"></div>
+  <div class="scroller">
+    <table class="inbox">
+      <thead><tr><th>标题</th><th>来源</th><th>意图</th><th>时长</th><th>存了多久</th><th></th></tr></thead>
+      <tbody id="inbox-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  重遇 · 本地演示版。所有数据存在你浏览器的 localStorage 里，不出本机。<br>
+  意图判定、主题聚类、语义匹配目前是启发式规则；接入向量检索 + 关键词双路召回 + 模型抽取后会替换掉这一层。
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+const DAY = 86400000, NOW = Date.now();
+const KEY = "chongyu.v1";
+
+/* ── 语料：示例收藏（真实场景下由书签导入 / 分享入口进来）─── */
+const SEED = [
+ // 家装配色
+ {t:"60-30-10 配色法则到底怎么用在自己家里",u:"https://www.bilibili.com/video/BV1xx411c7mD",s:"bilibili",ty:"video",c:18,d:96,e:"把主色/辅色/点缀色的比例讲透了，后半段拿三个真实户型做拆解。",tp:["家装","配色"]},
+ {t:"我家墙面刷了 5 种白，最后选了这个",u:"https://mp.weixin.qq.com/s/example-wall",s:"wechat",ty:"post",c:8,d:132,e:"对比了乳白、奶白、灰白在不同朝向下的实际观感。",tp:["家装","配色","涂料"]},
+ {t:"小户型显大的 12 个配色思路",u:"https://www.xiaohongshu.com/explore/exa1",s:"xiaohongshu",ty:"post",c:4,d:71,e:"",tp:["家装","配色","小户型"]},
+ {t:"莫兰迪色系为什么在家里就是不好看",u:"https://mp.weixin.qq.com/s/example-morandi",s:"wechat",ty:"post",c:7,d:54,e:"讲了显色指数和自然光的关系，反常识但有道理。",tp:["家装","配色"]},
+ {t:"宜家同款收纳墙 DIY 全过程",u:"https://www.bilibili.com/video/BV1yy411c7ab",s:"bilibili",ty:"video",c:34,d:118,e:"从打孔到装板，工具清单在简介里。",tp:["家装","DIY","收纳"]},
+ {t:"装修水电改造避坑清单（2024版）",u:"https://zhuanlan.zhihu.com/p/example1",s:"blog",ty:"article",c:22,d:402,e:"很全，但里面的价格已经不作数了。",tp:["家装","装修"]},
+
+ // AI 搜索 / RAG 工程
+ {t:"RAG 为什么在你的场景里效果这么差",u:"https://blog.example.dev/rag-failure-modes",s:"blog",ty:"article",c:16,d:38,e:"把失败拆成召回、排序、生成三段，每段给了可测的指标。",tp:["RAG","检索","评测"]},
+ {t:"BM25 和向量检索融合：RRF 到底做对了什么",u:"https://blog.example.dev/rrf",s:"blog",ty:"article",c:12,d:61,e:"用一页纸推完了倒数排名融合，附了一个反例。",tp:["检索","RAG","排序"]},
+ {t:"手撸一个能跑的 embedding 服务",u:"https://www.bilibili.com/video/BV1zz411c7cd",s:"bilibili",ty:"video",c:47,d:83,e:"从模型选型到批处理到显存，一路到压测。",tp:["RAG","工程","embedding"]},
+ {t:"检索评测集怎么造：从 200 条 badcase 开始",u:"https://mp.weixin.qq.com/s/example-eval",s:"wechat",ty:"post",c:14,d:27,e:"主张先有评测再有优化，给了标注规范模板。",tp:["评测","检索","RAG"]},
+ {t:"Agent 工具调用的五种编排模式",u:"https://blog.example.dev/agent-orchestration",s:"blog",ty:"article",c:26,d:19,e:"ReAct 之外的几种，含各自的失败模式。",tp:["Agent","RAG"]},
+ {t:"重排模型什么时候值得上",u:"https://blog.example.dev/reranker",s:"blog",ty:"article",c:9,d:145,e:"结论是召回质量差的时候上重排是浪费钱。",tp:["排序","检索"]},
+
+ // 前端动效
+ {t:"CSS 只用 transform 做出丝滑列表动画",u:"https://blog.example.dev/css-list-motion",s:"blog",ty:"article",c:11,d:73,e:"FLIP 技术的最小实现，不到 40 行。",tp:["前端","动效","CSS"]},
+ {t:"缓动曲线怎么选才不像 PPT",u:"https://www.bilibili.com/video/BV1aa411c7ef",s:"bilibili",ty:"video",c:23,d:151,e:"把 cubic-bezier 的四个值和体感一一对上了。",tp:["前端","动效"]},
+ {t:"Canvas 粒子系统性能优化实录",u:"https://blog.example.dev/canvas-perf",s:"blog",ty:"article",c:31,d:210,e:"离屏渲染 + 对象池，帧率从 22 拉到 60。",tp:["前端","动效","性能"]},
+ {t:"View Transitions API 现在能用了吗",u:"https://blog.example.dev/view-transitions",s:"blog",ty:"article",c:13,d:31,e:"",tp:["前端","动效"]},
+
+ // 咖啡
+ {t:"手冲三段式注水，水温和粉水比的关系",u:"https://www.bilibili.com/video/BV1bb411c7gh",s:"bilibili",ty:"video",c:16,d:88,e:"同一支豆子做了 6 组对照。",tp:["咖啡","手冲"]},
+ {t:"家用磨豆机 800 到 3000 元横评",u:"https://post.smzdm.com/p/example-grinder",s:"blog",ty:"article",c:28,d:167,e:"结论：预算卡在 1500 最划算。",tp:["咖啡","器材"]},
+ {t:"这台意式机我用了两年",u:"https://mp.weixin.qq.com/s/example-espresso",s:"wechat",ty:"post",c:10,d:44,e:"长期使用报告，含维护成本。",tp:["咖啡","器材"]},
+
+ // 露营
+ {t:"三人帐怎么选：门厅、内高、防水指数",u:"https://www.bilibili.com/video/BV1cc411c7ij",s:"bilibili",ty:"video",c:21,d:112,e:"",tp:["露营","装备"]},
+ {t:"周末两天一夜的极简装备清单",u:"https://mp.weixin.qq.com/s/example-camp",s:"wechat",ty:"post",c:6,d:59,e:"按重量排的，总重控制在 9kg 以内。",tp:["露营","装备"]},
+ {t:"野外做饭的火力控制",u:"https://www.xiaohongshu.com/explore/exa2",s:"xiaohongshu",ty:"post",c:3,d:23,e:"",tp:["露营","做饭"]},
+
+ // 花艺
+ {t:"螺旋手法扎花束，手把手",u:"https://www.bilibili.com/video/BV1dd411c7kl",s:"bilibili",ty:"video",c:19,d:76,e:"新手最容易卡的是握点位置。",tp:["花艺","技法"]},
+ {t:"AIFD 十项设计原则通俗版",u:"https://blog.example.dev/aifd-ten",s:"blog",ty:"article",c:24,d:191,e:"把专业术语翻译成人话了。",tp:["花艺","理论"]},
+ {t:"切花养护：换水、剪根、保鲜剂",u:"https://mp.weixin.qq.com/s/example-flower",s:"wechat",ty:"post",c:9,d:35,e:"",tp:["花艺","养护"]},
+
+ // 工具 & 想买
+ {t:"这把人体工学椅值不值 3000",u:"https://item.jd.com/example1.html",s:"other",ty:"product",c:5,d:181,e:"一直没下单。",tp:["办公","家具"]},
+ {t:"Raycast 我最常用的 12 个扩展",u:"https://blog.example.dev/raycast",s:"blog",ty:"tool",c:12,d:64,e:"",tp:["效率","工具"]},
+ {t:"2023 年最好用的十款截图工具",u:"https://blog.example.dev/screenshot-2023",s:"blog",ty:"article",c:8,d:520,e:"里面一半已经停止维护了。",tp:["效率","工具"]},
+ {t:"降噪耳机横评，通勤场景",u:"https://post.smzdm.com/p/example-hp",s:"blog",ty:"article",c:17,d:298,e:"",tp:["数码","想买"]},
+ {t:"机械键盘轴体手感对照表",u:"https://blog.example.dev/switches",s:"blog",ty:"article",c:7,d:340,e:"备着，换轴的时候查。",tp:["数码","键盘"]}
+];
+
+/* ── 启发式：域名 → 来源 / 类型 ───────────────────────── */
+const SOURCE_MAP = [
+  [/bilibili\.com/,"bilibili","video"], [/youtube\.com|youtu\.be/,"youtube","video"],
+  [/douyin\.com/,"douyin","video"], [/mp\.weixin\.qq\.com/,"wechat","post"],
+  [/xiaohongshu\.com/,"xiaohongshu","post"], [/zhihu\.com/,"blog","article"],
+  [/juejin\.cn|csdn\.net|sspai\.com|medium\.com|substack\.com/,"blog","article"],
+  [/github\.com/,"blog","tool"], [/(taobao|tmall|jd)\.com|amazon\./,"other","product"],
+  [/smzdm\.com/,"blog","article"]
+];
+const SOURCE_LABEL = {bilibili:"B站",youtube:"YouTube",douyin:"抖音",wechat:"公众号",xiaohongshu:"小红书",blog:"博客/专栏",other:"其他"};
+const TYPE_LABEL = {video:"视频",article:"长文",post:"图文",product:"商品",tool:"工具"};
+
+/* 意图关键词表 —— 上线后由模型抽取，这里先用规则 */
+const INTENT_RULES = [
+  ["想买", /值不值|横评|测评|选购|多少钱|买|开箱|种草|推荐.*款/],
+  ["动手", /手把手|教程|怎么做|DIY|从零|实现|搭建|全过程|实录|手撸|避坑/],
+  ["备查", /清单|对照表|速查|规范|手册|文档|索引|大全/],
+  ["学习", /原理|为什么|讲透|入门|系统|理论|原则|模式|拆解|法则/],
+  ["灵感", /灵感|案例|设计|风格|配色|好看|审美/],
+];
+const INTENT_WEIGHT = {"动手":1.25,"学习":1.15,"灵感":1.05,"想买":0.95,"有趣":0.85,"备查":0.55};
+const TOPIC_DICT = {
+  "家装":/装修|家装|户型|墙面|收纳|软装|硬装/,"配色":/配色|色系|颜色|色彩|莫兰迪|白/,
+  "咖啡":/咖啡|手冲|意式|磨豆|espresso/i,"露营":/露营|帐篷|户外|营地/,
+  "花艺":/花艺|花束|插花|切花|鲜花/,"前端":/CSS|前端|Canvas|JavaScript|React|动效|动画/i,
+  "检索":/检索|搜索|召回|排序|BM25|向量|RAG|embedding|重排/i,"评测":/评测|badcase|指标|测试/i,
+  "Agent":/Agent|工具调用|编排/i,"效率":/效率|工具|快捷|自动化/,"数码":/耳机|键盘|显示器|手机|数码/,
+  "装备":/装备|器材|清单/,"性能":/性能|优化|帧率|显存/
+};
+
+function inferSource(url){
+  for(const [re,s,t] of SOURCE_MAP) if(re.test(url)) return [s,t];
+  return ["other","article"];
+}
+function inferIntent(title,note){
+  const s = (title||"") + " " + (note||"");
+  if(note){
+    if(/买|下单|入手/.test(note)) return "想买";
+    if(/做一遍|照着|动手|试试/.test(note)) return "动手";
+    if(/备着|以后|查|引用/.test(note)) return "备查";
+    if(/学|搞懂|弄明白/.test(note)) return "学习";
+  }
+  for(const [k,re] of INTENT_RULES) if(re.test(s)) return k;
+  return "有趣";
+}
+function inferCost(title,type){
+  if(type==="video") return /全过程|实录|完整|从零|系统/.test(title) ? 38 : 20;
+  if(type==="post") return 7;
+  if(type==="product") return 5;
+  if(/清单|对照表|速查/.test(title)) return 6;
+  return 14;
+}
+function inferTopics(title,folder){
+  const s = title + " " + (folder||"");
+  const out = [];
+  for(const k in TOPIC_DICT) if(TOPIC_DICT[k].test(s)) out.push(k);
+  if(!out.length && folder) out.push(folder);
+  return out.length ? out : ["未归类"];
+}
+
+/* ── 状态 ───────────────────────────────────────────────── */
+let items = [];
+let budget = 10;
+let tab = "resurface";
+
+function mkSeed(){
+  return SEED.map((x,i)=>({
+    id:"s"+i, url:x.u, title:x.t, excerpt:x.e||"", source:x.s, type:x.ty,
+    cost:x.c, addedAt:NOW - x.d*DAY, topics:x.tp,
+    intent:inferIntent(x.t,""), opens:0, lastOpenedAt:null, note:"", demo:true
+  }));
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const p = JSON.parse(raw); if(Array.isArray(p) && p.length){ items = p; return; } }
+  }catch(e){}
+  items = mkSeed(); save();
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(items)); }catch(e){} }
+
+/* ── 重遇打分 ───────────────────────────────────────────
+   score = 遗忘曲线 × 意图权重 × 冷落加成 × 时间档匹配 × 每日扰动
+   每个因子都保留下来，用来解释「为什么现在给你看」          */
+function ageDays(it){ return Math.max(0,(NOW - it.addedAt)/DAY); }
+
+function hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619);} return ((h>>>0)%1000)/1000; }
+const DATEKEY = new Date().toISOString().slice(0,10);
+
+function score(it){
+  const a = ageDays(it);
+  // 遗忘曲线：太新的还记得，不用推；越往后越淡忘，但太久也失效
+  const forget = (1 - Math.exp(-a/12)) * Math.exp(-a/260);
+  const intent = INTENT_WEIGHT[it.intent] || 1;
+  const neglect = it.opens === 0 ? 1.35 : 0.35;
+  // 时间档匹配：|时长 - 预算| 越小越好
+  const fit = Math.exp(-Math.pow(it.cost - budget,2) / (2*Math.pow(budget*0.65 + 5,2)));
+  const jitter = 0.82 + hash(it.id + DATEKEY)*0.36;
+  const f = {forget,intent,neglect,fit,jitter};
+  return {v: forget*intent*neglect*fit*jitter, f, a};
+}
+
+function why(it,sc){
+  const a = Math.round(sc.a), m = Math.round(sc.a/30);
+  const cand = [];
+  if(sc.f.fit > 0.82) cand.push([sc.f.fit, `${it.cost} 分钟，正好塞得进你选的这段空档`]);
+  if(it.opens === 0 && a > 120) cand.push([1.3, `存了 ${m} 个月，一次都没打开过`]);
+  if(it.intent === "动手" && it.opens === 0) cand.push([1.25, `当时标的是「想动手」，一直没动`]);
+  if(it.intent === "想买" && a > 90) cand.push([1.1, `「想买」放了 ${m} 个月了，现在还想买吗`]);
+  if(sc.f.forget > 0.7) cand.push([sc.f.forget, `存下来 ${a} 天了，差不多到你会忘的时候`]);
+  if(it.intent === "学习" && it.opens === 0) cand.push([0.9, `当时标了「想学」，到现在还没学`]);
+  cand.push([0.3, `${SOURCE_LABEL[it.source]}存的，同主题你还有几条没看`]);
+  cand.sort((x,y)=>y[0]-x[0]);
+  return cand[0][1];
+}
+
+/* ── 渲染：重遇 ─────────────────────────────────────────── */
+const NETS = [
+  {v:10, n:"通勤路上", h:"约 10 分钟"},
+  {v:30, n:"午休", h:"约 30 分钟"},
+  {v:75, n:"整块时间", h:"一小时以上"}
+];
+function renderNets(){
+  document.getElementById("nets").innerHTML = NETS.map(n=>
+    `<button class="net" data-b="${n.v}" aria-pressed="${budget===n.v}"><b>${n.n}</b><i>${n.h}</i></button>`
+  ).join("");
+}
+
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function agoText(ms){
+  const d = Math.round((NOW-ms)/DAY);
+  if(d < 1) return "今天";
+  if(d < 30) return d + " 天前";
+  if(d < 365) return Math.round(d/30) + " 个月前";
+  return (d/365).toFixed(1) + " 年前";
+}
+
+let firstPaint = true;
+function renderResurface(){
+  const live = items.filter(i=>!i.archived);
+  const risenEl = document.getElementById("risen");
+  // 只在首次进入时做上浮动画；重排、改时间档、窗口缩放都不该让卡片重新淡入
+  risenEl.classList.toggle("anim", firstPaint);
+  const ranked = live.map(i=>({it:i, sc:score(i)})).sort((a,b)=>b.sc.v-a.sc.v);
+  const top = ranked.slice(0,4), rest = ranked.slice(4,4+14);
+
+  risenEl.innerHTML = top.map((r,i)=>{
+    const it = r.it;
+    return `<article class="card" data-type="${it.type}">
+      <h3><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a></h3>
+      ${it.excerpt ? `<p class="ex">${esc(it.excerpt)}</p>` : ""}
+      <div class="meta">
+        <span class="chip">${TYPE_LABEL[it.type]}</span>
+        <span class="chip">${SOURCE_LABEL[it.source]}</span>
+        <span class="chip verd">${esc(it.intent)}</span>
+        <span class="chip"><span class="num">${it.cost}</span> 分钟</span>
+        <span class="chip">${agoText(it.addedAt)}存的</span>
+      </div>
+      <div class="why"><span class="lbl">为什么现在</span><span class="txt">${esc(why(it,r.sc))}</span></div>
+      <div class="acts">
+        <button class="btn" data-act="open" data-id="${it.id}">读过了</button>
+        <button class="btn ghost" data-act="later" data-id="${it.id}">先沉下去</button>
+        <button class="btn ghost" data-act="drop" data-id="${it.id}">不要了</button>
+      </div>
+    </article>`;
+  }).join("") || `<p class="empty">收件箱是空的。去「收件箱」粘一条链接，或者导入浏览器书签。</p>`;
+
+  document.getElementById("sediment").innerHTML = rest.map(r=>
+    `<div class="srow" style="opacity:${(0.85 - rest.indexOf(r)*0.045).toFixed(2)}">
+      <span class="t"><a href="${esc(r.it.url)}" target="_blank" rel="noopener">${esc(r.it.title)}</a></span>
+      <span class="c">${r.it.cost}min</span>
+      <span class="d">${agoText(r.it.addedAt)}</span>
+    </div>`).join("");
+
+  // 深度标尺
+  const rail = document.getElementById("rail");
+  const colH = document.querySelector(".column").offsetHeight || 800;
+  const surfaceY = document.querySelector(".sunkhead") ? document.querySelector(".sunkhead").offsetTop + 10 : 400;
+  rail.innerHTML = `<div class="waterline" style="top:${surfaceY}px"><span>水面</span></div>` +
+    [0.15,0.45,0.75].map((p,i)=>`<div class="tick" style="top:${(surfaceY + (colH-surfaceY)*p)|0}px"><span>${["近","中","远"][i]}</span></div>`).join("");
+  firstPaint = false;
+}
+
+/* ── 渲染：专题聚簇 ─────────────────────────────────────── */
+function buildClusters(){
+  const live = items.filter(i=>!i.archived);
+  const byTopic = {};
+  live.forEach(it=>(it.topics||[]).forEach(t=>{ (byTopic[t]=byTopic[t]||[]).push(it); }));
+  // 主题会互相套娃（「配色」的 5 条里有 4 条也在「家装」里），
+  // 从大到小贪心取，跟已选专题重叠过半的就并进去，不再单开一组
+  const kept = [];
+  Object.keys(byTopic)
+    .filter(t=> t!=="未归类" && byTopic[t].length >= 3)
+    .sort((a,b)=>byTopic[b].length - byTopic[a].length)
+    .forEach(t=>{
+      const ids = new Set(byTopic[t].map(i=>i.id));
+      const swallowed = kept.some(k=>{
+        const n = byTopic[k].filter(i=>ids.has(i.id)).length;
+        return n / ids.size > 0.6;
+      });
+      if(!swallowed) kept.push(t);
+    });
+  return kept
+    .map(t=>{
+      const list = byTopic[t].slice().sort((a,b)=>b.addedAt-a.addedAt);
+      const spanD = Math.round((list[0].addedAt - list[list.length-1].addedAt)/DAY);
+      const intents = {}; list.forEach(i=>intents[i.intent]=(intents[i.intent]||0)+1);
+      const domIntent = Object.keys(intents).sort((a,b)=>intents[b]-intents[a])[0];
+      const srcs = [...new Set(list.map(i=>SOURCE_LABEL[i.source]))];
+      const unread = list.filter(i=>i.opens===0).length;
+      const mins = list.reduce((s,i)=>s+i.cost,0);
+      return {topic:t, list, spanD, domIntent, srcs, unread, mins};
+    })
+    .sort((a,b)=>b.list.length-a.list.length);
+}
+function renderClusters(){
+  const cs = buildClusters();
+  document.getElementById("n-clusters").textContent = cs.length ? cs.length : "";
+  document.getElementById("clusters").innerHTML = cs.map(c=>`
+    <div class="cluster">
+      <div class="hd">
+        <h3>${esc(c.topic)}</h3>
+        <span class="span">${c.list.length} 条 · ${c.mins} 分钟</span>
+      </div>
+      <p class="synth">跨 ${c.spanD > 60 ? Math.round(c.spanD/30)+" 个月" : c.spanD+" 天"}、在 ${c.srcs.slice(0,3).join(" / ")} 上陆续存下的 ${c.list.length} 条，多数标的是「${c.domIntent}」${c.unread ? `，其中 ${c.unread} 条还没打开过` : "，都看过了"}。</p>
+      <ul>${c.list.slice(0,5).map(i=>
+        `<li><span class="dot"></span><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></li>`).join("")}
+        ${c.list.length>5 ? `<li><span class="dot" style="background:var(--line)"></span><span style="color:var(--ink-faint);font-size:12px">还有 ${c.list.length-5} 条</span></li>` : ""}
+      </ul>
+    </div>`).join("") || `<p class="empty">还没攒够能成组的内容——同一主题满 3 条就会在这里冒出来。</p>`;
+}
+
+/* ── 渲染：追问 ─────────────────────────────────────────── */
+function bigrams(s){
+  s = s.toLowerCase().replace(/[^一-龥a-z0-9]+/g," ");
+  const out = new Set();
+  s.split(/\s+/).filter(Boolean).forEach(w=>{
+    if(/[a-z0-9]/.test(w)){ out.add(w); return; }
+    if(w.length===1){ out.add(w); return; }
+    for(let i=0;i<w.length-1;i++) out.add(w.slice(i,i+2));
+  });
+  return out;
+}
+function overlap(a,b){ let n=0; a.forEach(x=>{ if(b.has(x)) n++; }); return n; }
+
+function searchItems(q){
+  const f = {
+    source:document.getElementById("f-source").value,
+    intent:document.getElementById("f-intent").value,
+    age:document.getElementById("f-age").value,
+    cost:document.getElementById("f-cost").value
+  };
+  let pool = items.filter(i=>!i.archived);
+  if(f.source) pool = pool.filter(i=>i.source===f.source);
+  if(f.intent) pool = pool.filter(i=>i.intent===f.intent);
+  if(f.age){ const n=+f.age; pool = n===9999 ? pool.filter(i=>ageDays(i)>365) : pool.filter(i=>ageDays(i)<=n); }
+  if(f.cost){ const n=+f.cost; pool = n===999 ? pool.filter(i=>i.cost>30) : pool.filter(i=>i.cost<=n); }
+
+  if(!q.trim()) return pool.sort((a,b)=>b.addedAt-a.addedAt).map(i=>({it:i,sc:0}));
+
+  const qg = bigrams(q);
+  return pool.map(it=>{
+    const s = overlap(qg,bigrams(it.title))*3
+            + overlap(qg,bigrams(it.excerpt||""))*1
+            + overlap(qg,bigrams((it.topics||[]).join(" ")))*2.5
+            + overlap(qg,bigrams(it.note||""))*2
+            + overlap(qg,bigrams(SOURCE_LABEL[it.source]+" "+TYPE_LABEL[it.type]+" "+it.intent))*1.5;
+    return {it, sc:s};
+  }).filter(r=>r.sc>0).sort((a,b)=>b.sc-a.sc);
+}
+
+function hl(text,q){
+  if(!q.trim()) return esc(text);
+  const terms = [...bigrams(q)].filter(t=>t.length>=2).sort((a,b)=>b.length-a.length).slice(0,12);
+  let out = esc(text);
+  terms.forEach(t=>{
+    const safe = t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+    out = out.replace(new RegExp("(?![^<]*>)"+safe,"gi"), m=>`<mark>${m}</mark>`);
+  });
+  return out;
+}
+
+function renderAsk(){
+  const q = document.getElementById("q").value;
+  const res = searchItems(q);
+  const el = document.getElementById("results");
+  if(!res.length){
+    el.innerHTML = `<p class="empty">没找到。换个说法试试——描述内容比回忆标题更管用。</p>`;
+    return;
+  }
+  el.innerHTML = `<p class="eyebrow">命中 ${res.length} 条</p><div class="risen">` + res.slice(0,20).map(r=>{
+    const it = r.it;
+    return `<article class="card" data-type="${it.type}">
+      <h3><a href="${esc(it.url)}" target="_blank" rel="noopener">${hl(it.title,q)}</a></h3>
+      ${it.excerpt ? `<p class="ex">${hl(it.excerpt,q)}</p>` : ""}
+      <div class="meta">
+        <span class="chip">${TYPE_LABEL[it.type]}</span>
+        <span class="chip">${SOURCE_LABEL[it.source]}</span>
+        <span class="chip verd">${esc(it.intent)}</span>
+        <span class="chip"><span class="num">${it.cost}</span> 分钟</span>
+        <span class="chip">${agoText(it.addedAt)}</span>
+        ${(it.topics||[]).slice(0,3).map(t=>`<span class="chip">#${esc(t)}</span>`).join("")}
+      </div>
+    </article>`;
+  }).join("") + `</div>`;
+}
+
+const SUGGESTIONS = ["讲配色的视频","装修的时候存的那些","想动手做但一直没做的","半年前那个咖啡器材横评","检索融合 RRF","10 分钟能看完的"];
+function renderSuggest(){
+  document.getElementById("suggest").innerHTML = SUGGESTIONS.map(s=>`<button data-q="${esc(s)}">${esc(s)}</button>`).join("");
+}
+function fillFilters(){
+  const srcSel = document.getElementById("f-source"), intSel = document.getElementById("f-intent");
+  const srcs = [...new Set(items.map(i=>i.source))];
+  srcSel.innerHTML = `<option value="">全部来源</option>` + srcs.map(s=>`<option value="${s}">${SOURCE_LABEL[s]||s}</option>`).join("");
+  const ints = [...new Set(items.map(i=>i.intent))];
+  intSel.innerHTML = `<option value="">全部意图</option>` + ints.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("");
+}
+
+/* ── 渲染：收件箱 + 腐烂检测 ────────────────────────────── */
+function rot(it){
+  const a = ageDays(it);
+  if(/20(1\d|2[0-4])\s*年|20(1\d|2[0-4])版|最新|今年/.test(it.title) && a > 330) return "内容可能已经过期";
+  if(a > 300 && it.opens === 0) return `存了 ${Math.round(a/30)} 个月没碰过`;
+  return null;
+}
+function renderInbox(){
+  const live = items.filter(i=>!i.archived);
+  document.getElementById("n-inbox").textContent = live.length;
+  const rotten = live.map(i=>({it:i, r:rot(i)})).filter(x=>x.r);
+  document.getElementById("inbox-alerts").innerHTML = rotten.length
+    ? `<div class="alert"><b>该清一清了</b> — ${rotten.length} 条内容看着已经没用了。${
+        rotten.slice(0,3).map(x=>`「${esc(x.it.title)}」（${x.r}）`).join("、")}${rotten.length>3?` 等 ${rotten.length} 条`:""}。
+        <div style="margin-top:8px"><button class="btn" id="purge">全部清掉</button></div></div>`
+    : `<div class="alert ok"><b>没有需要清理的</b> — 存太久没碰、或者内容明显过期的会在这里主动找你。</div>`;
+
+  document.getElementById("inbox-body").innerHTML = live.slice().sort((a,b)=>b.addedAt-a.addedAt).map(it=>`
+    <tr>
+      <td class="t"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.title)}</a>
+        ${it.note ? `<div style="font-size:12px;color:var(--ink-faint);margin-top:2px">“${esc(it.note)}”</div>` : ""}
+        ${rot(it) ? `<div style="margin-top:4px"><span class="chip rust">${esc(rot(it))}</span></div>` : ""}</td>
+      <td><span class="chip">${SOURCE_LABEL[it.source]}</span></td>
+      <td><span class="chip verd">${esc(it.intent)}</span></td>
+      <td class="num" style="color:var(--ink-soft)">${it.cost}min</td>
+      <td class="num" style="color:var(--ink-faint)">${agoText(it.addedAt)}</td>
+      <td><button class="btn ghost" data-act="drop" data-id="${it.id}" style="font-size:11px;padding:3px 8px">删</button></td>
+    </tr>`).join("") || `<tr><td colspan="6" class="empty">空的。</td></tr>`;
+}
+
+/* ── 入库 ───────────────────────────────────────────────── */
+function similar(title){
+  const g = bigrams(title);
+  let best = null, bs = 0;
+  items.filter(i=>!i.archived).forEach(it=>{
+    const o = overlap(g,bigrams(it.title)), r = o / Math.max(4,g.size);
+    if(r > bs){ bs = r; best = it; }
+  });
+  return bs > 0.45 ? best : null;
+}
+function addItem(url,title,note,addedAt,folder){
+  const [source,type] = inferSource(url);
+  title = (title||url).trim();
+  const it = {
+    id:"u"+Math.random().toString(36).slice(2,9), url, title, excerpt:"", source, type,
+    cost:inferCost(title,type), addedAt:addedAt||NOW, topics:inferTopics(title,folder),
+    intent:inferIntent(title,note), opens:0, lastOpenedAt:null, note:note||""
+  };
+  items.push(it);
+  return it;
+}
+
+function handleAdd(){
+  const url = document.getElementById("new-url").value.trim();
+  const title = document.getElementById("new-title").value.trim();
+  const note = document.getElementById("new-note").value.trim();
+  if(!url){ document.getElementById("new-url").focus(); return; }
+  const dupe = title ? similar(title) : null;
+  const it = addItem(url,title,note);
+  save();
+  document.getElementById("new-url").value = "";
+  document.getElementById("new-title").value = "";
+  document.getElementById("new-note").value = "";
+  renderAll();
+  if(dupe){
+    document.getElementById("inbox-alerts").insertAdjacentHTML("afterbegin",
+      `<div class="alert"><b>你存过类似的</b> — ${agoText(dupe.addedAt)}你就存过「${esc(dupe.title)}」，
+       ${dupe.opens===0 ? "而且一直没打开。要不先看那条？" : "那条你看过了。"}
+       <div style="margin-top:8px"><a class="btn" href="${esc(dupe.url)}" target="_blank" rel="noopener">打开旧的那条</a></div></div>`);
+  }
+}
+
+function handleFile(ev){
+  const f = ev.target.files && ev.target.files[0];
+  if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const doc = new DOMParser().parseFromString(String(rd.result),"text/html");
+    const links = [...doc.querySelectorAll("a[href]")];
+    let n = 0;
+    const seen = new Set(items.map(i=>i.url));
+    links.forEach(a=>{
+      const href = a.getAttribute("href") || "";
+      if(!/^https?:/i.test(href) || seen.has(href)) return;
+      seen.add(href);
+      const ts = parseInt(a.getAttribute("add_date")||"",10);
+      // 找最近的上层文件夹名（Netscape 格式里是 <H3>）
+      let folder = "";
+      let dl = a.closest("dl");
+      if(dl){ const p = dl.previousElementSibling; if(p && p.tagName === "H3") folder = p.textContent.trim(); }
+      addItem(href, a.textContent.trim(), "", ts ? ts*1000 : NOW, folder);
+      n++;
+    });
+    save(); renderAll();
+    document.getElementById("inbox-alerts").insertAdjacentHTML("afterbegin",
+      n ? `<div class="alert ok"><b>导入了 ${n} 条</b> — 来源和类型按域名判定，意图和时长按标题推断。到「重遇」看看今天该浮上来哪几条。</div>`
+        : `<div class="alert"><b>没导入到东西</b> — 这个文件里没找到新链接。确认导出的是书签 HTML（Chrome：书签管理器 → 右上角 → 导出书签）。</div>`);
+    ev.target.value = "";
+  };
+  rd.readAsText(f);
+}
+
+/* ── 交互 ───────────────────────────────────────────────── */
+function renderAll(){
+  document.getElementById("stat").textContent = items.filter(i=>!i.archived).length + " 条在册";
+  if(tab==="resurface") renderResurface();
+  if(tab==="clusters") renderClusters();
+  if(tab==="ask"){ renderAsk(); }
+  renderInbox();
+  renderClusters();
+}
+
+document.addEventListener("click", e=>{
+  const tabBtn = e.target.closest("nav.tabs button");
+  if(tabBtn){
+    tab = tabBtn.dataset.tab;
+    document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected", String(b===tabBtn)));
+    document.querySelectorAll(".panel").forEach(p=>p.hidden = (p.id !== "panel-"+tab));
+    renderAll();
+    if(tab==="resurface") requestAnimationFrame(renderResurface);
+    return;
+  }
+  const net = e.target.closest(".net");
+  if(net){ budget = +net.dataset.b; renderNets(); renderResurface(); return; }
+
+  const sg = e.target.closest(".suggest button");
+  if(sg){ document.getElementById("q").value = sg.dataset.q; renderAsk(); return; }
+
+  const act = e.target.closest("[data-act]");
+  if(act){
+    const it = items.find(x=>x.id===act.dataset.id);
+    if(!it) return;
+    if(act.dataset.act==="open"){ it.opens++; it.lastOpenedAt = NOW; }
+    if(act.dataset.act==="later"){ it.addedAt = NOW - 3*DAY; }   // 重置遗忘曲线，过阵子再来
+    if(act.dataset.act==="drop"){ it.archived = true; }
+    save(); renderAll();
+    return;
+  }
+  if(e.target.id==="purge"){
+    items.filter(i=>!i.archived && rot(i)).forEach(i=>i.archived = true);
+    save(); renderAll(); return;
+  }
+  if(e.target.id==="reseed"){
+    items = mkSeed(); save(); fillFilters(); renderAll();
+    if(tab==="resurface") renderResurface();
+    return;
+  }
+});
+
+document.getElementById("q").addEventListener("input", renderAsk);
+["f-source","f-intent","f-age","f-cost"].forEach(id=>document.getElementById(id).addEventListener("change", renderAsk));
+document.getElementById("add").addEventListener("click", handleAdd);
+document.getElementById("file").addEventListener("change", handleFile);
+window.addEventListener("resize", ()=>{ if(tab==="resurface") renderResurface(); });
+
+load(); renderNets(); fillFilters(); renderSuggest(); renderAll();
+requestAnimationFrame(renderResurface);
+})();
+</script>
